@@ -1,0 +1,768 @@
+{% comment %}
+  Bounce Path — Jeu de réflexion platformer
+  Balle en rebond automatique, blocs qui se décrémentent.
+  Contrôles : ← → clavier | appui gauche/droite mobile
+{% endcomment %}
+
+<style>
+  .bp-section {
+    background: {{ section.settings.bg_color }};
+    padding: 32px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .bp-header {
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .bp-header h2 {
+    color: {{ section.settings.text_color }};
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin: 0 0 4px;
+  }
+
+  .bp-header p {
+    color: {{ section.settings.text_color }};
+    opacity: 0.65;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .bp-game-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    max-width: 100%;
+    width: 800px;
+    cursor: none;
+  }
+
+  #bp-canvas {
+    display: block;
+    width: 100%;
+    touch-action: none;
+  }
+
+  .bp-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 20, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: opacity 0.25s;
+  }
+
+  .bp-overlay.hidden {
+    display: none;
+  }
+
+  .bp-modal {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 30px 36px;
+    text-align: center;
+    max-width: 340px;
+    width: 88%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .bp-modal h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: #111;
+  }
+
+  .bp-modal p {
+    font-size: 14px;
+    color: #555;
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+
+  .bp-modal ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+  }
+
+  .bp-modal ul li {
+    font-size: 13px;
+    color: #444;
+    padding: 4px 0;
+    line-height: 1.6;
+  }
+
+  .bp-legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 18px;
+  }
+
+  .bp-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #555;
+  }
+
+  .bp-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .bp-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.1s;
+  }
+
+  .bp-btn:hover {
+    background: #1d4ed8;
+  }
+
+  .bp-btn:active {
+    transform: scale(0.97);
+  }
+
+  .bp-hint-bar {
+    margin-top: 10px;
+    font-size: 12px;
+    color: {{ section.settings.text_color }};
+    opacity: 0.45;
+    display: flex;
+    gap: 14px;
+  }
+</style>
+
+<div class="bp-section">
+  {% if section.settings.title != blank %}
+    <div class="bp-header">
+      <h2>{{ section.settings.title }}</h2>
+      {% if section.settings.subtitle != blank %}
+        <p>{{ section.settings.subtitle }}</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="bp-game-wrap">
+    <canvas id="bp-canvas" width="800" height="480"></canvas>
+
+    <div class="bp-overlay" id="bp-overlay">
+
+      <!-- Start screen -->
+      <div class="bp-modal" id="bp-screen-start">
+        <h3>Bounce Path</h3>
+        <p>Guide la balle de rebond du départ jusqu'au drapeau !</p>
+        <ul>
+          <li>La balle rebondit automatiquement</li>
+          <li>Appuie ← → pour te diriger</li>
+          <li>Les blocs colorés disparaissent après N rebonds</li>
+          <li>Les blocs gris sont stables — repose-toi pour réfléchir</li>
+        </ul>
+        <div class="bp-legend">
+          <div class="bp-legend-item">
+            <div class="bp-legend-dot" style="background:#27ae60"></div>3 rebonds
+          </div>
+          <div class="bp-legend-item">
+            <div class="bp-legend-dot" style="background:#f39c12"></div>2 rebonds
+          </div>
+          <div class="bp-legend-item">
+            <div class="bp-legend-dot" style="background:#e74c3c"></div>1 rebond
+          </div>
+          <div class="bp-legend-item">
+            <div class="bp-legend-dot" style="background:#95a5a6"></div>stable ∞
+          </div>
+        </div>
+        <button class="bp-btn" id="bp-btn-start">Jouer →</button>
+      </div>
+
+      <!-- Win screen -->
+      <div class="bp-modal hidden" id="bp-screen-win">
+        <h3>Bravo !</h3>
+        <p id="bp-win-stats"></p>
+        <button class="bp-btn" id="bp-btn-win">Rejouer</button>
+      </div>
+
+      <!-- Lose screen -->
+      <div class="bp-modal hidden" id="bp-screen-lose">
+        <h3>Chute !</h3>
+        <p>La balle est tombée. Réessaie !</p>
+        <button class="bp-btn" id="bp-btn-lose">Réessayer</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="bp-hint-bar">
+    <span>Clavier : ← →</span>
+    <span>|</span>
+    <span>Mobile : appuie à gauche ou à droite</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─── Canvas setup ───────────────────────────────────────────────────────────
+  const canvas = document.getElementById('bp-canvas');
+  const ctx    = canvas.getContext('2d');
+  const CW = 800, CH = 480;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = CW * dpr;
+  canvas.height = CH * dpr;
+  canvas.style.width  = CW + 'px';
+  canvas.style.height = CH + 'px';
+  ctx.scale(dpr, dpr);
+
+  // ─── DOM refs ───────────────────────────────────────────────────────────────
+  const overlay      = document.getElementById('bp-overlay');
+  const screenStart  = document.getElementById('bp-screen-start');
+  const screenWin    = document.getElementById('bp-screen-win');
+  const screenLose   = document.getElementById('bp-screen-lose');
+  const winStats     = document.getElementById('bp-win-stats');
+
+  // ─── Physics constants ──────────────────────────────────────────────────────
+  const G           = 0.5;
+  const BOUNCE_VY   = -13.5;
+  const MAX_VX      = 5.5;
+  const ACCEL       = 0.45;
+  const AIR_DRAG    = 0.975;
+  const BALL_R      = 12;
+  const WORLD_W     = 2700;
+
+  // ─── Platform colors by remaining durability ────────────────────────────────
+  function platColor(dur) {
+    if (dur === Infinity) return { body: '#7f8c8d', shadow: '#5d6d7e', accent: 'rgba(255,255,255,0.55)' };
+    if (dur >= 3)         return { body: '#27ae60', shadow: '#1e8449', accent: 'rgba(255,255,255,0.45)' };
+    if (dur === 2)        return { body: '#e67e22', shadow: '#ca6f1e', accent: 'rgba(255,255,255,0.40)' };
+    return                       { body: '#e74c3c', shadow: '#c0392b', accent: 'rgba(255,255,255,0.35)' };
+  }
+
+  // ─── Level definition ───────────────────────────────────────────────────────
+  // Each platform: { x, y, w, dur, maxDur }
+  // y = top edge of platform | height = 16px for collision
+  function buildLevel() {
+    return [
+      { x:   50, y: 350, w: 180, dur: Infinity, maxDur: Infinity }, // Start
+      { x:  300, y: 320, w:  90, dur: 3,        maxDur: 3        },
+      { x:  460, y: 290, w:  80, dur: 2,        maxDur: 2        },
+      { x:  610, y: 340, w:  70, dur: 3,        maxDur: 3        },
+      { x:  770, y: 310, w: 150, dur: Infinity, maxDur: Infinity }, // Rest 1
+      { x:  990, y: 275, w:  65, dur: 2,        maxDur: 2        },
+      { x: 1140, y: 320, w:  55, dur: 1,        maxDur: 1        }, // Fragile!
+      { x: 1280, y: 285, w:  75, dur: 3,        maxDur: 3        },
+      { x: 1430, y: 325, w:  60, dur: 2,        maxDur: 2        },
+      { x: 1590, y: 300, w: 140, dur: Infinity, maxDur: Infinity }, // Rest 2
+      { x: 1810, y: 265, w:  55, dur: 1,        maxDur: 1        }, // Fragile!
+      { x: 1960, y: 315, w:  65, dur: 2,        maxDur: 2        },
+      { x: 2110, y: 280, w:  50, dur: 1,        maxDur: 1        }, // Fragile!
+      { x: 2250, y: 325, w:  70, dur: 3,        maxDur: 3        },
+      { x: 2400, y: 295, w: 170, dur: Infinity, maxDur: Infinity }, // End + Flag
+    ];
+  }
+
+  // ─── Game state ─────────────────────────────────────────────────────────────
+  let ball, platforms, camX, bounceCount, startTime, state, rafId;
+  let keys = { left: false, right: false };
+  let touch = { left: false, right: false };
+  let flashTimers = []; // per-platform flash on bounce
+
+  function reset() {
+    platforms   = buildLevel();
+    flashTimers = platforms.map(() => 0);
+    const sp    = platforms[0];
+    ball = {
+      x:  sp.x + sp.w / 2,
+      y:  sp.y - BALL_R,
+      vx: 0,
+      vy: BOUNCE_VY,
+    };
+    camX        = 0;
+    bounceCount = 0;
+    startTime   = Date.now();
+    state       = 'play';
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+  function isLeft()  { return keys.left  || touch.left;  }
+  function isRight() { return keys.right || touch.right; }
+
+  function showScreen(name) {
+    overlay.classList.remove('hidden');
+    screenStart.classList.add('hidden');
+    screenWin.classList.add('hidden');
+    screenLose.classList.add('hidden');
+    if (name === 'start') screenStart.classList.remove('hidden');
+    if (name === 'win')   screenWin.classList.remove('hidden');
+    if (name === 'lose')  screenLose.classList.remove('hidden');
+  }
+
+  function hideOverlay() {
+    overlay.classList.add('hidden');
+  }
+
+  // ─── Input ──────────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a') { keys.left  = true; e.preventDefault(); }
+    if (e.key === 'ArrowRight' || e.key === 'd') { keys.right = true; e.preventDefault(); }
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a') keys.left  = false;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+  });
+
+  function updateTouches(list) {
+    touch.left = touch.right = false;
+    const rect = canvas.getBoundingClientRect();
+    const mid  = rect.left + (rect.right - rect.left) / 2;
+    for (const t of list) {
+      if (t.clientX < mid) touch.left  = true;
+      else                 touch.right = true;
+    }
+  }
+
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); updateTouches(e.touches); }, { passive: false });
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); updateTouches(e.touches); }, { passive: false });
+  canvas.addEventListener('touchend',   e => { e.preventDefault(); updateTouches(e.touches); }, { passive: false });
+  canvas.addEventListener('touchcancel',e => { e.preventDefault(); updateTouches(e.touches); }, { passive: false });
+
+  // ─── Button events ──────────────────────────────────────────────────────────
+  document.getElementById('bp-btn-start').addEventListener('click', () => {
+    hideOverlay(); reset(); startLoop();
+  });
+  document.getElementById('bp-btn-win').addEventListener('click', () => {
+    screenWin.classList.add('hidden');
+    hideOverlay(); reset();
+  });
+  document.getElementById('bp-btn-lose').addEventListener('click', () => {
+    screenLose.classList.add('hidden');
+    hideOverlay(); reset();
+  });
+
+  // ─── Physics update ─────────────────────────────────────────────────────────
+  function update() {
+    if (state !== 'play') return;
+
+    // Horizontal
+    if (isLeft())  ball.vx -= ACCEL;
+    if (isRight()) ball.vx += ACCEL;
+    if (!isLeft() && !isRight()) ball.vx *= AIR_DRAG;
+    ball.vx = Math.max(-MAX_VX, Math.min(MAX_VX, ball.vx));
+
+    // Gravity
+    ball.vy += G;
+
+    // Move
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Left world boundary
+    if (ball.x - BALL_R < 0) { ball.x = BALL_R; if (ball.vx < 0) ball.vx *= -0.4; }
+
+    // Platform collision (only when falling)
+    if (ball.vy > 0) {
+      for (let i = 0; i < platforms.length; i++) {
+        const p = platforms[i];
+        if (p.dur <= 0) continue;
+
+        const pH = 16; // collision height
+        if (
+          ball.x + BALL_R * 0.7 > p.x &&
+          ball.x - BALL_R * 0.7 < p.x + p.w &&
+          ball.y + BALL_R       > p.y &&
+          ball.y + BALL_R       < p.y + pH + Math.abs(ball.vy) + 2
+        ) {
+          ball.y  = p.y - BALL_R;
+          ball.vy = BOUNCE_VY;
+          bounceCount++;
+          flashTimers[i] = 8;
+
+          if (p.dur !== Infinity) {
+            p.dur = Math.max(0, p.dur - 1);
+          }
+
+          // Win: landed on last platform
+          if (i === platforms.length - 1) {
+            state = 'win';
+            const secs = ((Date.now() - startTime) / 1000).toFixed(1);
+            winStats.textContent = `${bounceCount} rebonds en ${secs} secondes`;
+            setTimeout(() => showScreen('win'), 400);
+          }
+          break;
+        }
+      }
+    }
+
+    // Fall off → game over
+    if (ball.y > CH + 60) {
+      state = 'lose';
+      setTimeout(() => showScreen('lose'), 200);
+    }
+
+    // Smooth camera: keep ball at ~30% from left
+    const targetCam = ball.x - CW * 0.3;
+    camX += (targetCam - camX) * 0.09;
+    camX = Math.max(0, Math.min(WORLD_W - CW, camX));
+
+    // Tick flash timers
+    for (let i = 0; i < flashTimers.length; i++) {
+      if (flashTimers[i] > 0) flashTimers[i]--;
+    }
+  }
+
+  // ─── Draw helpers ───────────────────────────────────────────────────────────
+  function rrect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // Static cloud data
+  const CLOUDS = [
+    { wx: 150,  y: 55, rx: 52, ry: 22 },
+    { wx: 480,  y: 38, rx: 40, ry: 17 },
+    { wx: 850,  y: 70, rx: 62, ry: 26 },
+    { wx: 1250, y: 45, rx: 45, ry: 19 },
+    { wx: 1650, y: 62, rx: 55, ry: 23 },
+    { wx: 2050, y: 42, rx: 48, ry: 20 },
+    { wx: 2450, y: 68, rx: 58, ry: 24 },
+  ];
+
+  function drawClouds() {
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    for (const c of CLOUDS) {
+      const cx = c.wx - camX * 0.35; // parallax
+      ctx.beginPath();
+      ctx.ellipse(cx,          c.y,     c.rx,        c.ry,      0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx - c.rx * 0.55, c.y + 6,  c.rx * 0.65, c.ry * 0.75, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + c.rx * 0.6,  c.y + 5,  c.rx * 0.60, c.ry * 0.70, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawPlatform(p, i) {
+    if (p.dur <= 0) return;
+
+    const pH  = 16;
+    const c   = platColor(p.dur);
+    const flash = flashTimers[i] > 0;
+
+    // Drop shadow
+    ctx.fillStyle = c.shadow;
+    rrect(p.x + 2, p.y + 5, p.w, pH, 6);
+    ctx.fill();
+
+    // Body (flash = brighten briefly)
+    ctx.fillStyle = flash ? '#fff' : c.body;
+    rrect(p.x, p.y, p.w, pH, 6);
+    ctx.fill();
+
+    // Top gloss
+    if (!flash) {
+      ctx.fillStyle = c.accent;
+      rrect(p.x + 3, p.y + 2, p.w - 6, 4, 2);
+      ctx.fill();
+    }
+
+    // Durability indicator (dots above platform)
+    if (p.maxDur !== Infinity) {
+      const DOT_R = 3.5;
+      const DOT_GAP = 9;
+      const total = p.maxDur;
+      const startX = p.x + p.w / 2 - ((total - 1) * DOT_GAP) / 2;
+      for (let d = 0; d < total; d++) {
+        ctx.beginPath();
+        ctx.arc(startX + d * DOT_GAP, p.y - 8, DOT_R, 0, Math.PI * 2);
+        ctx.fillStyle = d < p.dur
+          ? 'rgba(255,255,255,0.90)'
+          : 'rgba(255,255,255,0.22)';
+        ctx.fill();
+      }
+    }
+
+    // Infinity label on safe platforms
+    if (p.dur === Infinity) {
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('∞', p.x + p.w / 2, p.y + 12);
+    }
+  }
+
+  function drawFlag(endPlat) {
+    const fx = endPlat.x + endPlat.w - 28;
+    const fy = endPlat.y;
+    const fh = 52;
+
+    // Pole
+    ctx.strokeStyle = '#7f8c8d';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx, fy - fh);
+    ctx.stroke();
+
+    // Flag waving
+    const wave = Math.sin(Date.now() / 200) * 2;
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.moveTo(fx,       fy - fh);
+    ctx.quadraticCurveTo(fx + 16, fy - fh + 10 + wave, fx + 28, fy - fh + 8 + wave);
+    ctx.quadraticCurveTo(fx + 16, fy - fh + 20 + wave, fx,      fy - fh + 22);
+    ctx.closePath();
+    ctx.fill();
+
+    // Star on flag
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★', fx + 14, fy - fh + 15 + wave * 0.5);
+  }
+
+  function drawBall() {
+    const bx = ball.x, by = ball.y;
+    const squishY = state === 'play' ? 1 : 1;
+
+    // Shadow on nearest platform below
+    let shadowOpacity = 0;
+    for (const p of platforms) {
+      if (p.dur <= 0) continue;
+      if (Math.abs(bx - (p.x + p.w / 2)) < p.w / 2 + BALL_R) {
+        const dist = p.y - (by + BALL_R);
+        if (dist >= 0 && dist < 180) {
+          shadowOpacity = 0.3 * (1 - dist / 180);
+          const shadowW = BALL_R * 1.2 * (1 - dist / 300);
+          ctx.fillStyle = `rgba(0,0,0,${shadowOpacity})`;
+          ctx.beginPath();
+          ctx.ellipse(bx, p.y - 2, shadowW, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+      }
+    }
+
+    // Ball gradient
+    const grad = ctx.createRadialGradient(bx - 3, by - 4, 2, bx, by, BALL_R);
+    grad.addColorStop(0,   '#ffb347');
+    grad.addColorStop(0.5, '#ff6b35');
+    grad.addColorStop(1,   '#c0392b');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(bx, by, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.beginPath();
+    ctx.ellipse(bx - 3.5, by - 4.5, 4, 2.5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawProgress() {
+    const PAD  = 14;
+    const barW = 180;
+    const barH = 7;
+    const bx   = CW / 2 - barW / 2;
+    const by   = 14;
+    const endX = platforms[platforms.length - 1].x + platforms[platforms.length - 1].w / 2;
+    const prog = Math.min(1, Math.max(0, (ball.x - platforms[0].x) / (endX - platforms[0].x)));
+
+    // Track
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    rrect(bx - 1, by - 1, barW + 2, barH + 2, 4);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    rrect(bx, by, barW, barH, 3);
+    ctx.fill();
+
+    // Fill
+    if (prog > 0) {
+      const fillW = Math.max(6, barW * prog);
+      ctx.fillStyle = prog > 0.7 ? '#27ae60' : prog > 0.4 ? '#f39c12' : '#3498db';
+      rrect(bx, by, fillW, barH, 3);
+      ctx.fill();
+    }
+
+    // Ball icon
+    ctx.fillStyle = '#ff6b35';
+    ctx.beginPath();
+    ctx.arc(bx + barW * prog, by + barH / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flag icon
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('⚑', bx + barW + 4, by + barH);
+  }
+
+  function drawHUD() {
+    // Bounce counter
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    rrect(12, 12, 120, 40, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Rebonds : ' + bounceCount, 22, 28);
+
+    if (state === 'play') {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(elapsed + ' s', 22, 44);
+    }
+
+    // Mobile touch hints
+    const tHintY = CH - 46;
+    // Left button
+    ctx.fillStyle = touch.left ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.08)';
+    rrect(10, tHintY, 62, 36, 8);
+    ctx.fill();
+    ctx.fillStyle = touch.left ? '#fff' : 'rgba(255,255,255,0.45)';
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('◀', 41, tHintY + 25);
+
+    // Right button
+    ctx.fillStyle = touch.right ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.08)';
+    rrect(CW - 72, tHintY, 62, 36, 8);
+    ctx.fill();
+    ctx.fillStyle = touch.right ? '#fff' : 'rgba(255,255,255,0.45)';
+    ctx.fillText('▶', CW - 41, tHintY + 25);
+  }
+
+  // ─── Main draw ──────────────────────────────────────────────────────────────
+  function draw() {
+    // Sky
+    const sky = ctx.createLinearGradient(0, 0, 0, CH);
+    sky.addColorStop(0,   '#87CEEB');
+    sky.addColorStop(0.7, '#D4EFFF');
+    sky.addColorStop(1,   '#E8F8FF');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, CW, CH);
+
+    drawClouds();
+
+    ctx.save();
+    ctx.translate(-camX, 0);
+
+    // Danger zone tint near bottom
+    const dangerGrad = ctx.createLinearGradient(0, CH - 50, 0, CH);
+    dangerGrad.addColorStop(0, 'rgba(231,76,60,0)');
+    dangerGrad.addColorStop(1, 'rgba(231,76,60,0.12)');
+    ctx.fillStyle = dangerGrad;
+    ctx.fillRect(camX, CH - 50, CW, 50);
+
+    // Platforms
+    for (let i = 0; i < platforms.length; i++) {
+      drawPlatform(platforms[i], i);
+    }
+
+    // Flag on end platform
+    drawFlag(platforms[platforms.length - 1]);
+
+    // Ball
+    drawBall();
+
+    ctx.restore();
+
+    // Progress bar & HUD (always in screen space)
+    drawProgress();
+    drawHUD();
+  }
+
+  // ─── Loop ───────────────────────────────────────────────────────────────────
+  function loop() {
+    update();
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function startLoop() {
+    if (rafId) cancelAnimationFrame(rafId);
+    loop();
+  }
+
+  // ─── Init: show start screen, draw static frame ──────────────────────────
+  reset();
+  draw(); // first paint before overlay
+  showScreen('start');
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Bounce Path Game",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Titre de la section",
+      "default": "Bounce Path"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Sous-titre",
+      "default": "Guide la balle jusqu'au drapeau !"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Couleur de fond",
+      "default": "#0f0e17"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Couleur du texte",
+      "default": "#ffffff"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bounce Path Game"
+    }
+  ]
+}
+{% endschema %}
