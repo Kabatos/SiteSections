@@ -1,0 +1,123 @@
+<section id="sellers-showcase-{{ section.id }}" class="sellers-showcase section-{{ section.id }}">
+  {%- if section.settings.heading != blank -%}
+    <div class="sellers-showcase__header">
+      <h2 class="sellers-showcase__heading">{{ section.settings.heading }}</h2>
+      {%- if section.settings.subheading != blank -%}
+        <p class="sellers-showcase__subheading">{{ section.settings.subheading }}</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  <div class="sellers-showcase__grid">
+    {%- for block in section.blocks -%}
+      <div class="seller-card" {{ block.shopify_attributes }}>
+        <a href="{{ block.settings.link | default: '#' }}" class="seller-card__inner">
+          <div class="seller-card__avatar">
+            {%- if block.settings.avatar != blank -%}
+              {{ block.settings.avatar | image_url: width: 200 | image_tag: class: 'seller-card__avatar-image', loading: 'lazy' }}
+            {%- else -%}
+              <div class="seller-card__avatar-placeholder">{{ block.settings.name | default: 'V' | slice: 0 }}</div>
+            {%- endif -%}
+            {%- if block.settings.verified -%}
+              <span class="seller-card__verified" aria-label="Vendeur vérifié">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+                  <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            {%- endif -%}
+          </div>
+          <div class="seller-card__info">
+            <h3 class="seller-card__name">{{ block.settings.name | default: 'Nom du vendeur' }}</h3>
+            {%- if block.settings.specialty != blank -%}
+              <p class="seller-card__specialty">{{ block.settings.specialty }}</p>
+            {%- endif -%}
+            <div class="seller-card__stats">
+              {%- if block.settings.rating != blank -%}
+                <span class="seller-card__stat">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  {{ block.settings.rating }}
+                </span>
+              {%- endif -%}
+              {%- if block.settings.sales_count != blank -%}
+                <span class="seller-card__stat">{{ block.settings.sales_count }} ventes</span>
+              {%- endif -%}
+            </div>
+          </div>
+          <span class="seller-card__cta">Voir la boutique →</span>
+        </a>
+      </div>
+    {%- endfor -%}
+  </div>
+
+  {%- if section.settings.show_all_link -%}
+    <div class="sellers-showcase__footer">
+      <a href="{{ section.settings.all_sellers_link | default: '#' }}" class="sellers-showcase__all-link btn-outline">
+        {{ section.settings.all_sellers_label | default: 'Tous les vendeurs' }}
+      </a>
+    </div>
+  {%- endif -%}
+</section>
+
+<style>
+  .sellers-showcase { padding: {{ section.settings.padding_top }}px 2rem {{ section.settings.padding_bottom }}px; max-width: 1400px; margin: 0 auto; background: {{ section.settings.background_color }}; }
+  .sellers-showcase__header { text-align: center; margin-bottom: 2.5rem; }
+  .sellers-showcase__heading { font-size: clamp(1.5rem, 3vw, 2.25rem); margin: 0 0 0.5rem; }
+  .sellers-showcase__subheading { color: #666; font-size: 1rem; margin: 0; }
+  .sellers-showcase__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.25rem; }
+  @media (max-width: 749px) { .sellers-showcase__grid { grid-template-columns: repeat(2, 1fr); } }
+  .seller-card { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s, transform 0.2s; background: #fff; }
+  .seller-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.1); transform: translateY(-2px); }
+  .seller-card__inner { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.75rem 1.25rem 1.25rem; text-decoration: none; color: inherit; gap: 0.75rem; }
+  .seller-card__avatar { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+  .seller-card__avatar-image { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+  .seller-card__avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: #fff; text-transform: uppercase; }
+  .seller-card__verified { position: absolute; bottom: 2px; right: 2px; width: 22px; height: 22px; background: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+  .seller-card__name { font-size: 1rem; font-weight: 700; margin: 0; }
+  .seller-card__specialty { font-size: 0.8rem; color: #666; margin: 0; }
+  .seller-card__stats { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+  .seller-card__stat { display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: #555; font-weight: 500; }
+  .seller-card__cta { font-size: 0.8rem; font-weight: 600; color: #2563eb; margin-top: auto; }
+  .sellers-showcase__footer { text-align: center; margin-top: 2.5rem; }
+  .btn-outline { display: inline-block; padding: 0.75rem 2rem; border: 2px solid #111; border-radius: 6px; font-size: 0.95rem; font-weight: 600; text-decoration: none; color: #111; transition: background 0.2s, color 0.2s; }
+  .btn-outline:hover { background: #111; color: #fff; }
+</style>
+
+{% schema %}
+{
+  "name": "Vitrine vendeurs",
+  "tag": "section",
+  "class": "section-sellers-showcase",
+  "max_blocks": 12,
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Nos meilleurs vendeurs" },
+    { "type": "text", "id": "subheading", "label": "Sous-titre", "default": "Des vendeurs de confiance, vérifiés par notre équipe" },
+    { "type": "color", "id": "background_color", "label": "Couleur de fond", "default": "#f9fafb" },
+    { "type": "checkbox", "id": "show_all_link", "label": "Lien Tous les vendeurs", "default": true },
+    { "type": "url", "id": "all_sellers_link", "label": "Lien" },
+    { "type": "text", "id": "all_sellers_label", "label": "Texte du lien", "default": "Voir tous les vendeurs" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Espacement haut", "default": 60 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Espacement bas", "default": 60 }
+  ],
+  "blocks": [{
+    "type": "seller", "name": "Vendeur",
+    "settings": [
+      { "type": "image_picker", "id": "avatar", "label": "Photo" },
+      { "type": "text", "id": "name", "label": "Nom", "default": "Marie Dupont" },
+      { "type": "text", "id": "specialty", "label": "Spécialité", "default": "Mode & Accessoires" },
+      { "type": "text", "id": "rating", "label": "Note", "default": "4.8" },
+      { "type": "text", "id": "sales_count", "label": "Ventes", "default": "1 234" },
+      { "type": "checkbox", "id": "verified", "label": "Vérifié", "default": true },
+      { "type": "url", "id": "link", "label": "Lien boutique" }
+    ]
+  }],
+  "presets": [{
+    "name": "Vitrine vendeurs",
+    "blocks": [
+      {"type":"seller","settings":{"name":"Marie Dupont","specialty":"Mode & Accessoires"}},
+      {"type":"seller","settings":{"name":"Jean Martin","specialty":"Électronique"}},
+      {"type":"seller","settings":{"name":"Sophie Laurent","specialty":"Maison & Déco"}},
+      {"type":"seller","settings":{"name":"Ahmed Benali","specialty":"Sport & Loisirs"}}
+    ]
+  }]
+}
+{% endschema %}

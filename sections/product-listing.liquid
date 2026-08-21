@@ -1,0 +1,170 @@
+{%- liquid
+  assign collection_handle = section.settings.collection
+  assign collection = collections[collection_handle]
+  assign products_limit = section.settings.products_count
+-%}
+
+<section id="product-listing-{{ section.id }}" class="product-listing section-{{ section.id }}">
+  <div class="product-listing__top">
+    {%- if section.settings.heading != blank -%}
+      <div class="product-listing__header">
+        <h2 class="product-listing__heading">{{ section.settings.heading }}</h2>
+        {%- if section.settings.subheading != blank -%}
+          <p class="product-listing__subheading">{{ section.settings.subheading }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    {%- if section.settings.show_view_all and collection != blank -%}
+      <a href="{{ collection.url }}" class="product-listing__view-all">
+        {{ section.settings.view_all_label | default: 'Voir tout' }}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    {%- endif -%}
+  </div>
+
+  <div class="product-listing__grid" style="--cols: {{ section.settings.columns }};">
+    {%- if collection != blank -%}
+      {%- for product in collection.products limit: products_limit -%}
+        <div class="product-card">
+          <a href="{{ product.url }}" class="product-card__media-link">
+            <div class="product-card__media">
+              {%- if product.featured_image -%}
+                {{ product.featured_image | image_url: width: 600 | image_tag: class: 'product-card__image product-card__image--primary', loading: 'lazy' }}
+                {%- if product.images[1] and section.settings.show_second_image -%}
+                  {{ product.images[1] | image_url: width: 600 | image_tag: class: 'product-card__image product-card__image--secondary', loading: 'lazy' }}
+                {%- endif -%}
+              {%- else -%}
+                {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}
+              {%- endif -%}
+              {%- if product.compare_at_price > product.price -%}
+                {%- assign discount = product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price -%}
+                <span class="product-card__badge product-card__badge--sale">-{{ discount }}%</span>
+              {%- elsif product.tags contains 'nouveau' or product.tags contains 'new' -%}
+                <span class="product-card__badge product-card__badge--new">Nouveau</span>
+              {%- endif -%}
+              <div class="product-card__actions">
+                <button type="button" class="product-card__wishlist" aria-label="Ajouter aux favoris">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </a>
+          <div class="product-card__info">
+            {%- if section.settings.show_vendor -%}<p class="product-card__vendor">{{ product.vendor }}</p>{%- endif -%}
+            <h3 class="product-card__title"><a href="{{ product.url }}">{{ product.title }}</a></h3>
+            <div class="product-card__price">
+              {%- if product.compare_at_price > product.price -%}
+                <span class="product-card__price--compare">{{ product.compare_at_price | money }}</span>
+              {%- endif -%}
+              <span class="product-card__price--current{% if product.compare_at_price > product.price %} product-card__price--sale{% endif %}">
+                {{ product.price | money }}
+              </span>
+            </div>
+            {%- if section.settings.show_add_to_cart -%}
+              {%- if product.variants.size == 1 and product.variants.first.available -%}
+                <form action="/cart/add" method="post">
+                  <input type="hidden" name="id" value="{{ product.variants.first.id }}">
+                  <button type="submit" class="product-card__add-btn">Ajouter au panier</button>
+                </form>
+              {%- else -%}
+                <a href="{{ product.url }}" class="product-card__add-btn product-card__add-btn--choose">
+                  {%- if product.available -%}Choisir les options{%- else -%}Épuisé{%- endif -%}
+                </a>
+              {%- endif -%}
+            {%- endif -%}
+          </div>
+        </div>
+      {%- else -%}
+        {%- for i in (1..products_limit) -%}
+          <div class="product-card product-card--placeholder">
+            <div class="product-card__media">{{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}</div>
+            <div class="product-card__info">
+              <h3 class="product-card__title">Produit exemple {{ i }}</h3>
+              <div class="product-card__price"><span class="product-card__price--current">25,00 €</span></div>
+            </div>
+          </div>
+        {%- endfor -%}
+      {%- endfor -%}
+    {%- else -%}
+      {%- for i in (1..products_limit) -%}
+        <div class="product-card product-card--placeholder">
+          <div class="product-card__media">{{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}</div>
+          <div class="product-card__info">
+            <p class="product-card__vendor">Vendeur</p>
+            <h3 class="product-card__title">Produit exemple {{ i }}</h3>
+            <div class="product-card__price"><span class="product-card__price--current">25,00 €</span></div>
+          </div>
+        </div>
+      {%- endfor -%}
+    {%- endif -%}
+  </div>
+</section>
+
+<style>
+  .product-listing { padding: {{ section.settings.padding_top }}px 2rem {{ section.settings.padding_bottom }}px; max-width: 1400px; margin: 0 auto; }
+  .product-listing__top { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
+  .product-listing__heading { font-size: clamp(1.4rem, 2.5vw, 2rem); margin: 0 0 0.35rem; }
+  .product-listing__subheading { color: #666; font-size: 0.95rem; margin: 0; }
+  .product-listing__view-all { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; font-size: 0.9rem; font-weight: 600; text-decoration: none; color: inherit; border-bottom: 2px solid currentColor; padding-bottom: 2px; transition: opacity 0.2s; flex-shrink: 0; }
+  .product-listing__view-all:hover { opacity: 0.65; }
+  .product-listing__grid { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 1.5rem 1.25rem; }
+  @media (max-width: 989px) { .product-listing__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 479px) { .product-listing__grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } }
+  .product-card { display: flex; flex-direction: column; }
+  .product-card__media-link { display: block; text-decoration: none; }
+  .product-card__media { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: {{ section.settings.image_ratio }}; background: #f5f5f5; }
+  .product-card__image { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s, transform 0.4s; display: block; }
+  .product-card__image--secondary { position: absolute; inset: 0; opacity: 0; }
+  .product-card__media:hover .product-card__image--primary { opacity: 0; }
+  .product-card__media:hover .product-card__image--secondary { opacity: 1; }
+  .product-card__media:hover .product-card__image { transform: scale(1.04); }
+  .product-card__placeholder { width: 100%; height: 100%; background: #e8e8e8; }
+  .product-card__badge { position: absolute; top: 0.6rem; left: 0.6rem; font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; z-index: 1; }
+  .product-card__badge--sale { background: #e53e3e; color: #fff; }
+  .product-card__badge--new { background: #2b6cb0; color: #fff; }
+  .product-card__actions { position: absolute; top: 0.6rem; right: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; opacity: 0; transition: opacity 0.2s; z-index: 1; }
+  .product-card__media:hover .product-card__actions { opacity: 1; }
+  .product-card__wishlist { width: 36px; height: 36px; border-radius: 50%; border: none; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: background 0.2s; }
+  .product-card__wishlist:hover { background: #fee2e2; color: #e53e3e; }
+  .product-card__info { padding: 0.75rem 0 0; display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
+  .product-card__vendor { font-size: 0.75rem; color: #888; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+  .product-card__title { font-size: 0.9rem; font-weight: 500; margin: 0; line-height: 1.4; }
+  .product-card__title a { text-decoration: none; color: inherit; }
+  .product-card__title a:hover { text-decoration: underline; }
+  .product-card__price { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .product-card__price--compare { font-size: 0.85rem; color: #999; text-decoration: line-through; }
+  .product-card__price--current { font-size: 1rem; font-weight: 700; }
+  .product-card__price--sale { color: #e53e3e; }
+  .product-card__add-btn { display: block; width: 100%; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; text-align: center; text-decoration: none; border: none; border-radius: 6px; cursor: pointer; background: #111; color: #fff; margin-top: 0.5rem; transition: background 0.2s; }
+  .product-card__add-btn:hover { background: #333; }
+  .product-card__add-btn--choose { background: transparent; border: 2px solid #111; color: #111; }
+  .product-card__add-btn--choose:hover { background: #111; color: #fff; }
+</style>
+
+{% schema %}
+{
+  "name": "Grille de produits",
+  "tag": "section",
+  "class": "section-product-listing",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Produits populaires" },
+    { "type": "text", "id": "subheading", "label": "Sous-titre", "default": "Les articles préférés de nos clients" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    { "type": "range", "id": "products_count", "min": 2, "max": 24, "step": 1, "label": "Nombre de produits", "default": 8 },
+    { "type": "range", "id": "columns", "min": 2, "max": 5, "step": 1, "label": "Colonnes", "default": 4 },
+    { "type": "select", "id": "image_ratio", "label": "Format images", "options": [{"value":"1/1","label":"Carré"},{"value":"3/4","label":"Portrait"},{"value":"4/3","label":"Paysage"}], "default": "1/1" },
+    { "type": "checkbox", "id": "show_second_image", "label": "2e image au survol", "default": true },
+    { "type": "checkbox", "id": "show_vendor", "label": "Afficher le vendeur", "default": true },
+    { "type": "checkbox", "id": "show_add_to_cart", "label": "Bouton panier", "default": true },
+    { "type": "checkbox", "id": "show_view_all", "label": "Lien Voir tout", "default": true },
+    { "type": "text", "id": "view_all_label", "label": "Texte Voir tout", "default": "Voir tout" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Espacement haut", "default": 60 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Espacement bas", "default": 60 }
+  ],
+  "presets": [{ "name": "Grille de produits" }]
+}
+{% endschema %}

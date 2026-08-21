@@ -1,0 +1,96 @@
+<section
+  id="newsletter-{{ section.id }}"
+  class="newsletter section-{{ section.id }}"
+  style="--nl-bg: {{ section.settings.background_color }}; --nl-color: {{ section.settings.text_color }}; --nl-accent: {{ section.settings.accent_color }};"
+>
+  <div class="newsletter__inner">
+    {%- if section.settings.icon == 'email' -%}
+      <div class="newsletter__icon" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--nl-accent)" stroke-width="1.5">
+          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    {%- elsif section.settings.icon == 'gift' -%}
+      <div class="newsletter__icon" aria-hidden="true">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--nl-accent)" stroke-width="1.5">
+          <path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    {%- endif -%}
+    <div class="newsletter__content">
+      {%- if section.settings.heading != blank -%}<h2 class="newsletter__heading">{{ section.settings.heading }}</h2>{%- endif -%}
+      {%- if section.settings.subheading != blank -%}<p class="newsletter__subheading">{{ section.settings.subheading }}</p>{%- endif -%}
+      {%- if section.settings.benefits != blank -%}
+        <ul class="newsletter__benefits">
+          {%- assign benefits = section.settings.benefits | split: ',' -%}
+          {%- for benefit in benefits -%}
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--nl-accent)" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              {{ benefit | strip }}
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+      {% form 'customer', id: 'newsletter-form-{{ section.id }}', class: 'newsletter__form' %}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        <div class="newsletter__field-group">
+          <input type="email" name="contact[email]" id="newsletter-email-{{ section.id }}" class="newsletter__input" placeholder="{{ section.settings.placeholder | default: 'Votre adresse e-mail' }}" required autocomplete="email" aria-label="Adresse e-mail">
+          <button type="submit" class="newsletter__btn">{{ section.settings.button_label | default: "S'abonner" }}</button>
+        </div>
+        {%- if form.posted_successfully? -%}<p class="newsletter__success" role="status">{{ section.settings.success_message | default: 'Merci ! Vous êtes bien inscrit(e).' }}</p>{%- endif -%}
+        {%- if form.errors -%}<p class="newsletter__error" role="alert">{{ form.errors.translated_fields['email'] | capitalize }} {{ form.errors.messages['email'] }}</p>{%- endif -%}
+      {% endform %}
+      {%- if section.settings.disclaimer != blank -%}<p class="newsletter__disclaimer">{{ section.settings.disclaimer }}</p>{%- endif -%}
+    </div>
+  </div>
+</section>
+
+<style>
+  .newsletter { background: var(--nl-bg); color: var(--nl-color); padding: {{ section.settings.padding_top }}px 2rem {{ section.settings.padding_bottom }}px; }
+  .newsletter__inner { max-width: {{ section.settings.max_width }}px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.25rem; }
+  .newsletter__icon { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
+  .newsletter__heading { font-size: clamp(1.5rem, 3.5vw, 2.5rem); font-weight: 800; margin: 0; line-height: 1.15; }
+  .newsletter__subheading { font-size: 1.05rem; opacity: 0.8; margin: 0; max-width: 480px; }
+  .newsletter__benefits { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.5rem; }
+  .newsletter__benefits li { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; opacity: 0.85; }
+  .newsletter__form { width: 100%; max-width: 520px; }
+  .newsletter__field-group { display: flex; gap: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .newsletter__input { flex: 1; padding: 0.85rem 1.25rem; font-size: 1rem; border: none; outline: none; color: #111; background: #fff; min-width: 0; }
+  .newsletter__input::placeholder { color: #999; }
+  .newsletter__btn { padding: 0.85rem 1.5rem; font-size: 0.95rem; font-weight: 700; border: none; background: var(--nl-accent); color: #fff; cursor: pointer; white-space: nowrap; transition: filter 0.2s; flex-shrink: 0; }
+  .newsletter__btn:hover { filter: brightness(0.9); }
+  .newsletter__success { color: #86efac; font-size: 0.9rem; margin: 0.75rem 0 0; font-weight: 500; }
+  .newsletter__error { color: #fca5a5; font-size: 0.9rem; margin: 0.75rem 0 0; }
+  .newsletter__disclaimer { font-size: 0.75rem; opacity: 0.55; margin: 0.5rem 0 0; max-width: 400px; }
+  @media (max-width: 479px) {
+    .newsletter__field-group { flex-direction: column; border-radius: 8px; }
+    .newsletter__input { border-radius: 8px 8px 0 0; }
+    .newsletter__btn { border-radius: 0 0 8px 8px; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Newsletter",
+  "tag": "section",
+  "class": "section-newsletter",
+  "settings": [
+    { "type": "select", "id": "icon", "label": "Icône", "options": [{"value":"none","label":"Aucune"},{"value":"email","label":"E-mail"},{"value":"gift","label":"Cadeau"}], "default": "gift" },
+    { "type": "text", "id": "heading", "label": "Titre", "default": "Abonnez-vous & économisez 10%" },
+    { "type": "text", "id": "subheading", "label": "Sous-titre", "default": "Recevez les meilleures offres, nouveautés et promotions exclusives." },
+    { "type": "text", "id": "benefits", "label": "Avantages (séparés par des virgules)", "default": "Offres exclusives, Nouveautés en avant-première, Code promo -10%" },
+    { "type": "text", "id": "placeholder", "label": "Placeholder e-mail", "default": "Votre adresse e-mail" },
+    { "type": "text", "id": "button_label", "label": "Texte du bouton", "default": "S'abonner gratuitement" },
+    { "type": "text", "id": "success_message", "label": "Message de confirmation", "default": "Merci ! Vous êtes bien inscrit(e). Vérifiez votre boîte mail." },
+    { "type": "text", "id": "disclaimer", "label": "Mention légale", "default": "Pas de spam, désabonnement en un clic." },
+    { "type": "range", "id": "max_width", "min": 400, "max": 900, "step": 50, "unit": "px", "label": "Largeur max", "default": 650 },
+    { "type": "header", "content": "Couleurs" },
+    { "type": "color", "id": "background_color", "label": "Fond", "default": "#111827" },
+    { "type": "color", "id": "text_color", "label": "Texte", "default": "#ffffff" },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#7c3aed" },
+    { "type": "range", "id": "padding_top", "min": 20, "max": 120, "step": 4, "unit": "px", "label": "Espacement haut", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "min": 20, "max": 120, "step": 4, "unit": "px", "label": "Espacement bas", "default": 80 }
+  ],
+  "presets": [{ "name": "Newsletter" }]
+}
+{% endschema %}

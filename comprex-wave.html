@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECN100 — Commander avec Wave</title>
+  <meta name="description" content="Choisissez votre offre, renseignez vos coordonnées et payez simplement avec Wave." />
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--text:#141414;--muted:#6f7480;--line:#e7e9ee;--accent:#ff7a00;--wave:#00a5ff;--shadow:0 18px 45px rgba(15,23,42,.08);--radius:22px;}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(255,122,0,.10),transparent 28%),linear-gradient(180deg,#fff 0%,var(--bg) 100%);}
+    .wrap{max-width:1120px;margin:auto;padding:24px}
+    .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:38px;align-items:center;min-height:100vh;padding:28px 0 60px;}
+    .badge{display:inline-flex;gap:8px;align-items:center;background:#fff4e9;color:#b45309;border:1px solid #ffd8ad;border-radius:999px;padding:8px 12px;font-size:14px;font-weight:800;margin-bottom:18px;}
+    h1{margin:0 0 14px;font-size:clamp(40px,6vw,72px);line-height:.98;letter-spacing:-.04em;}
+    .lead{font-size:19px;line-height:1.6;color:var(--muted);max-width:680px;margin:0 0 24px;}
+    .trust{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 0;padding:0;list-style:none;}
+    .trust li{background:#fff;border:1px solid var(--line);padding:10px 13px;border-radius:14px;font-weight:700;font-size:14px;}
+    .product-card{background:linear-gradient(145deg,#fff,#fff8f2);border:1px solid #f3e7dc;box-shadow:var(--shadow);border-radius:32px;padding:32px;position:relative;overflow:hidden;min-height:520px;display:flex;align-items:center;justify-content:center;}
+    .product-card::before{content:"";position:absolute;width:320px;height:320px;border-radius:50%;background:rgba(255,122,0,.12);filter:blur(2px);top:50%;left:50%;transform:translate(-50%,-50%);}
+    .pack{position:relative;width:min(330px,80%);aspect-ratio:.72;background:linear-gradient(180deg,#fafafa 0 35%,#f97316 35% 100%);border-radius:22px 22px 16px 16px;box-shadow:0 35px 70px rgba(0,0,0,.18);border:1px solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-3deg);}
+    .pack .brand{font-size:34px;font-weight:900;color:#ea580c;letter-spacing:-.03em}
+    .pack .sub{font-size:14px;font-weight:800;margin-top:3px}
+    .pack .roots{font-size:52px;margin-top:22px}
+    .pack .bottom{position:absolute;bottom:35px;color:#fff;font-weight:800;font-size:13px}
+    .pay-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:26px;margin-top:8px;}
+    .pay-card h2{font-size:30px;margin:0 0 6px;letter-spacing:-.025em}
+    .pay-card .subline{margin:0 0 24px;color:var(--muted)}
+    .offers{display:grid;gap:12px;margin-bottom:24px}
+    .offer{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;border:2px solid var(--line);border-radius:18px;padding:15px;cursor:pointer;transition:.2s;background:#fff;}
+    .offer:hover{border-color:#cdd3dd;transform:translateY(-1px)}
+    .offer.active{border-color:#0f7dd7;background:#eff8ff}
+    .offer input{width:18px;height:18px;accent-color:#0f7dd7}
+    .offer-title{font-weight:900}
+    .offer-note{font-size:12px;color:var(--muted);margin-top:3px}
+    .price{font-weight:900;font-size:20px;white-space:nowrap}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field.full{grid-column:1/-1}
+    label{font-size:13px;font-weight:800;display:block;margin:0 0 7px}
+    input,textarea,select{width:100%;border:1px solid #d9dde5;border-radius:13px;padding:14px;font:inherit;background:#fff;outline:none;transition:.2s;}
+    input:focus,textarea:focus{border-color:#0f7dd7;box-shadow:0 0 0 3px rgba(15,125,215,.10)}
+    textarea{min-height:88px;resize:vertical}
+    .summary{display:flex;justify-content:space-between;align-items:end;margin:20px 0 14px;padding:15px 0;border-top:1px solid var(--line)}
+    .summary span{color:var(--muted);font-weight:700}
+    .summary strong{font-size:28px}
+    .wave-btn{width:100%;border:0;border-radius:15px;padding:17px 20px;background:var(--wave);color:#fff;font-size:17px;font-weight:900;cursor:pointer;box-shadow:0 12px 26px rgba(0,165,255,.25);display:flex;align-items:center;justify-content:center;gap:10px;}
+    .wave-btn:hover{filter:brightness(.98);transform:translateY(-1px)}
+    .wave-dot{width:22px;height:22px;background:#fff;border-radius:50%;display:inline-grid;place-items:center;color:var(--wave);font-size:14px}
+    .legal{font-size:12px;color:var(--muted);line-height:1.5;text-align:center;margin:12px 0 0}
+    .notice{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;color:#495161;margin-top:14px;}
+    .success-box{display:none;margin-top:16px;padding:14px;border-radius:14px;background:#ecfdf3;border:1px solid #bbf7d0;color:#166534;font-weight:700;}
+    .mini-section{padding:55px 0}
+    .mini-section h3{font-size:32px;margin:0 0 18px}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}
+    .step b{display:block;font-size:16px;margin-bottom:6px}
+    .step p{margin:0;color:var(--muted);line-height:1.5}
+    .num{width:34px;height:34px;border-radius:10px;background:#fff3e8;color:#c2410c;display:grid;place-items:center;font-weight:900;margin-bottom:13px}
+    footer{padding:30px 0 55px;text-align:center;color:var(--muted);font-size:13px}
+    @media(max-width:850px){.hero{grid-template-columns:1fr;min-height:auto;padding-top:18px}.product-card{min-height:420px}.steps{grid-template-columns:1fr}}
+    @media(max-width:560px){.wrap{padding:16px}h1{font-size:45px}.lead{font-size:17px}.product-card{min-height:360px;padding:20px}.pay-card{padding:18px;border-radius:18px}.pay-card h2{font-size:25px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.offer{grid-template-columns:auto 1fr}.price{grid-column:2}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="badge">⚡ Paiement rapide avec Wave</div>
+        <h1>Commandez simplement. Payez avec Wave.</h1>
+        <p class="lead">Choisissez votre offre, renseignez vos coordonnées de livraison et ouvrez Wave avec le montant déjà rempli.</p>
+        <ul class="trust">
+          <li>✓ Livraison gratuite</li>
+          <li>✓ Paiement Wave</li>
+          <li>✓ Commande en moins d'1 minute</li>
+        </ul>
+        <div class="product-card" aria-label="Illustration produit">
+          <div class="pack">
+            <div class="brand">COMPREX</div>
+            <div class="sub">Formule naturelle</div>
+            <div class="roots">🌿</div>
+            <div class="bottom">NOUVEAU PACKAGING</div>
+          </div>
+        </div>
+      </div>
+      <div class="pay-card" id="commande">
+        <h2>Finaliser ma commande</h2>
+        <p class="subline">Sélectionnez votre pack puis remplissez vos coordonnées.</p>
+        <div class="offers">
+          <label class="offer" data-price="9000"><input type="radio" name="offer" value="9000"><div><div class="offer-title">🟢 1 boîte + livraison gratuite</div><div class="offer-note">Environ 2 semaines de traitement</div></div><div class="price">9 000 F</div></label>
+          <label class="offer active" data-price="16000"><input type="radio" name="offer" value="16000" checked><div><div class="offer-title">🟣 2 boîtes + livraison gratuite</div><div class="offer-note">Choix préféré — environ 1 mois</div></div><div class="price">16 000 F</div></label>
+          <label class="offer" data-price="22000"><input type="radio" name="offer" value="22000"><div><div class="offer-title">🟠 3 boîtes + livraison gratuite</div><div class="offer-note">Environ 1 mois et 2 semaines</div></div><div class="price">22 000 F</div></label>
+          <label class="offer" data-price="28000"><input type="radio" name="offer" value="28000"><div><div class="offer-title">🔴 4 boîtes + livraison gratuite</div><div class="offer-note">Environ 2 mois</div></div><div class="price">28 000 F</div></label>
+        </div>
+        <form id="orderForm">
+          <div class="form-grid">
+            <div class="field"><label for="name">Nom et prénom</label><input id="name" name="name" type="text" autocomplete="name" placeholder="Ex. Jean Kouassi" required></div>
+            <div class="field"><label for="phone">Téléphone</label><input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="Ex. 05 07 00 00 00" required></div>
+            <div class="field"><label for="city">Ville</label><input id="city" name="city" type="text" placeholder="Ex. Abidjan" required></div>
+            <div class="field"><label for="district">Commune / quartier</label><input id="district" name="district" type="text" placeholder="Ex. Cocody Angré" required></div>
+            <div class="field full"><label for="address">Adresse / indication de livraison</label><textarea id="address" name="address" placeholder="Ex. Angré 8e tranche, près de..." required></textarea></div>
+          </div>
+          <div class="summary"><span>Total à payer</span><strong id="total">16 000 FCFA</strong></div>
+          <button class="wave-btn" type="submit"><span class="wave-dot">W</span><span id="buttonText">PAYER 16 000 F AVEC WAVE</span></button>
+          <div class="notice">🔒 Vous serez redirigé vers la page officielle <b>pay.wave.com</b>. Le montant du pack choisi sera pré-rempli.</div>
+          <div class="success-box" id="successBox"></div>
+          <p class="legal">En cliquant sur le bouton, vous confirmez que les informations de livraison saisies sont correctes.</p>
+        </form>
+      </div>
+    </section>
+    <section class="mini-section">
+      <h3>Comment ça marche ?</h3>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><b>Choisissez votre offre</b><p>Sélectionnez le nombre de boîtes qui vous convient.</p></div>
+        <div class="step"><div class="num">2</div><b>Renseignez vos coordonnées</b><p>Nom, téléphone et adresse de livraison.</p></div>
+        <div class="step"><div class="num">3</div><b>Payez avec Wave</b><p>Wave s'ouvre avec le montant de votre commande déjà renseigné.</p></div>
+      </div>
+    </section>
+    <footer>Paiement effectué via Wave • Landing page indépendante de Shopify</footer>
+  </main>
+  <script>
+    const WAVE_BASE_URL = "https://pay.wave.com/m/M_ci_IFO2YV6fMEwP/c/ci/";
+    const offerEls = [...document.querySelectorAll(".offer")];
+    const totalEl = document.getElementById("total");
+    const buttonText = document.getElementById("buttonText");
+    const form = document.getElementById("orderForm");
+    const successBox = document.getElementById("successBox");
+    function formatPrice(v){ return new Intl.NumberFormat("fr-FR").format(v).replace(/ /g," "); }
+    function currentPrice(){ const c=document.querySelector('input[name="offer"]:checked'); return Number(c?c.value:16000); }
+    function refreshOfferUI(){
+      const price=currentPrice();
+      offerEls.forEach(el=>{ const r=el.querySelector('input[name="offer"]'); el.classList.toggle("active",r.checked); });
+      totalEl.textContent=`${formatPrice(price)} FCFA`;
+      buttonText.textContent=`PAYER ${formatPrice(price)} F AVEC WAVE`;
+    }
+    offerEls.forEach(el=>{ el.addEventListener("click",()=>{ el.querySelector('input[name="offer"]').checked=true; refreshOfferUI(); }); });
+    async function saveOrder(order){
+      const prev=JSON.parse(localStorage.getItem("ecn_orders")||"[]"); prev.push(order); localStorage.setItem("ecn_orders",JSON.stringify(prev));
+    }
+    form.addEventListener("submit",async(e)=>{
+      e.preventDefault();
+      const price=currentPrice(), orderId=`ECN-${Date.now().toString().slice(-8)}`, data=new FormData(form);
+      const order={order_id:orderId,created_at:new Date().toISOString(),name:data.get("name"),phone:data.get("phone"),city:data.get("city"),district:data.get("district"),address:data.get("address"),amount:price,payment_method:"Wave",payment_status:"En attente de vérification"};
+      const button=form.querySelector('button[type="submit"]'), oldText=buttonText.textContent;
+      button.disabled=true; buttonText.textContent="PRÉPARATION DU PAIEMENT...";
+      try{
+        await saveOrder(order);
+        successBox.style.display="block"; successBox.textContent=`Commande ${orderId} enregistrée. Ouverture de Wave...`;
+        setTimeout(()=>{ window.location.href=`${WAVE_BASE_URL}?amount=${encodeURIComponent(price)}`; },450);
+      }catch(err){
+        successBox.style.display="block"; successBox.style.background="#fff1f2"; successBox.style.borderColor="#fecdd3"; successBox.style.color="#9f1239";
+        successBox.textContent="La commande n'a pas pu être enregistrée. Veuillez réessayer.";
+        button.disabled=false; buttonText.textContent=oldText;
+      }
+    });
+    refreshOfferUI();
+  </script>
+</body>
+</html>
